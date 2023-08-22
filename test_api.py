@@ -1,6 +1,5 @@
 import jitipy
 
-jitipy.test_simple()
 
 code = "my_program\n__global__ void my_kernel(int *data) { *data = 1; }"
 cache = jitipy.create_jit_cache()

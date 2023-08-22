@@ -64,6 +64,8 @@ static PyObject *test_simple(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
+static PyObject* jitify_error;
+
 static PyObject *create_jit_cache(PyObject *self, PyObject *args)
 {
   jitify::JitCache *cache = nullptr;
@@ -82,7 +84,7 @@ static PyObject *create_jit_cache(PyObject *self, PyObject *args)
   return ret;
 }
 
-static PyObject* delete_jit_cache(PyObject *self, PyObject *args)
+static PyObject *delete_jit_cache(PyObject *self, PyObject *args)
 {
   jitify::JitCache *cache = nullptr;
   if (!PyArg_ParseTuple(args, "K", &cache))
@@ -93,6 +95,42 @@ static PyObject* delete_jit_cache(PyObject *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
+static PyObject *jit_cache_program(PyObject *self, PyObject *args)
+{
+  jitify::JitCache *cache = nullptr;
+  char *program_source;
+  if (!PyArg_ParseTuple(args, "Ks", &cache, &program_source))
+    return nullptr;
+
+  jitify::Program *program = nullptr;
+  try {
+    program = new jitify::Program(*cache, program_source);
+  } catch (const std::bad_alloc &) {
+    PyErr_NoMemory();
+    return nullptr;
+  } catch (const std::runtime_error &re) {
+    PyErr_SetString(jitify_error, re.what());
+    return nullptr;
+  }
+
+  PyObject *ret = PyLong_FromUnsignedLongLong((unsigned long long)program);
+  if (ret == nullptr) {
+    delete program;
+  }
+
+  return ret;
+}
+
+static PyObject *delete_program(PyObject *self, PyObject *args)
+{
+  jitify::Program *program = nullptr;
+  if (!PyArg_ParseTuple(args, "K", &program))
+    return nullptr;
+
+  delete program;
+
+  Py_RETURN_NONE;
+}
 
 static PyMethodDef ext_methods[] = {
     {"test_simple", (PyCFunction)test_simple, METH_VARARGS,
@@ -101,6 +139,10 @@ static PyMethodDef ext_methods[] = {
       "Create a jitify::JitCache instance"},
     {"delete_jit_cache", (PyCFunction)delete_jit_cache, METH_VARARGS,
       "Delete a jitify::JitCache instance"},
+    {"jit_cache_program", (PyCFunction)jit_cache_program, METH_VARARGS,
+      "Create a cached jitify::Program instance"},
+    {"delete_program", (PyCFunction)delete_program, METH_VARARGS,
+      "Delete a jitify::Program instance"},
     {nullptr}
 };
 
@@ -110,5 +152,12 @@ static struct PyModuleDef moduledef = {
 
 PyMODINIT_FUNC PyInit__lib(void) {
   PyObject *m = PyModule_Create(&moduledef);
+  jitify_error = PyErr_NewException("_lib.JitifyError", nullptr, nullptr);
+  if (jitify_error == nullptr)
+    return nullptr;
+
+  if (PyModule_AddObjectRef(m, "JitifyError", jitify_error) < 0)
+    return nullptr;
+
   return m;
 }
