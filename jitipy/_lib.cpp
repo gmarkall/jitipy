@@ -64,9 +64,43 @@ static PyObject *test_simple(PyObject *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
+static PyObject *create_jit_cache(PyObject *self, PyObject *args)
+{
+  jitify::JitCache *cache = nullptr;
+  try {
+    cache = new jitify::JitCache{};
+  } catch (const std::bad_alloc &) {
+    PyErr_NoMemory();
+    return nullptr;
+  }
+
+  PyObject *ret = PyLong_FromUnsignedLongLong((unsigned long long)cache);
+  if (ret == nullptr) {
+    delete cache;
+  }
+
+  return ret;
+}
+
+static PyObject* delete_jit_cache(PyObject *self, PyObject *args)
+{
+  jitify::JitCache *cache = nullptr;
+  if (!PyArg_ParseTuple(args, "K", &cache))
+    return nullptr;
+
+  delete cache;
+
+  Py_RETURN_NONE;
+}
+
+
 static PyMethodDef ext_methods[] = {
     {"test_simple", (PyCFunction)test_simple, METH_VARARGS,
       "Runs a simple test"},
+    {"create_jit_cache", (PyCFunction)create_jit_cache, METH_VARARGS,
+      "Create a jitify::JitCache instance"},
+    {"delete_jit_cache", (PyCFunction)delete_jit_cache, METH_VARARGS,
+      "Delete a jitify::JitCache instance"},
     {nullptr}
 };
 
