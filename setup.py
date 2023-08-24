@@ -1,39 +1,26 @@
 # Copyright (c) 2023, NVIDIA CORPORATION
 
-import os
-import shutil
-from distutils.sysconfig import get_config_var, get_python_inc
 from setuptools import setup, Extension
+import subprocess
 
-include_dirs = [os.path.dirname(get_python_inc())]
-library_dirs = [get_config_var("LIBDIR")]
+cp = subprocess.run(['llvm-config', '--cflags'], capture_output=True)
+llvm_compile_args = cp.stdout.split()
 
-# Find and add CUDA include paths
-CUDA_HOME = os.environ.get("CUDA_HOME", False)
-if not CUDA_HOME:
-    path_to_cuda_gdb = shutil.which("cuda-gdb")
-    if path_to_cuda_gdb is None:
-        raise OSError(
-            "Could not locate CUDA. "
-            "Please set the environment variable "
-            "CUDA_HOME to the path to the CUDA installation "
-            "and try again."
-        )
-    CUDA_HOME = os.path.dirname(os.path.dirname(path_to_cuda_gdb))
+cp = subprocess.run(['llvm-config', '--ldflags'], capture_output=True)
+llvm_link_args = cp.stdout.split()
 
-if not os.path.isdir(CUDA_HOME):
-    raise OSError(f"Invalid CUDA_HOME: directory does not exist: {CUDA_HOME}")
+cp = subprocess.run(['llvm-config', '--libs'], capture_output=True)
+llvm_libs = cp.stdout.split()
 
-include_dirs.append(os.path.join(CUDA_HOME, "include"))
-library_dirs.append(os.path.join(CUDA_HOME, "lib64"))
+clang_link_args = ['-lclangAST', '-lclangBasic', '-lclangFrontend',
+                   '-lclangInterpreter']
+
 
 lib = Extension(
     'jitipy._lib',
     sources=['jitipy/_lib.cpp'],
-    libraries=['cuda', 'cudart', 'nvrtc'],
-    extra_compile_args=['-Wall', '-Werror', '-pthread'],
-    include_dirs=include_dirs,
-    library_dirs=library_dirs,
+    extra_compile_args=['-Wall', '-std=c++17'] + llvm_compile_args,
+    extra_link_args=llvm_link_args + llvm_libs + clang_link_args,
 )
 
 

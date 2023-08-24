@@ -4,7 +4,11 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Interpreter/Interpreter.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/ManagedStatic.h"
+/*
 #define JITIFY_PRINT_INSTANTIATION 1
 #define JITIFY_PRINT_SOURCE 1
 #define JITIFY_PRINT_LOG 1
@@ -131,33 +135,83 @@ static PyObject *delete_program(PyObject *self, PyObject *args)
 
   Py_RETURN_NONE;
 }
+*/
+
+static PyObject *create_interpreter(PyObject *self, PyObject *args)
+{
+  llvm::InitializeAllTargetInfos();
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmPrinters();
+
+  clang::IncrementalCompilerBuilder CB;
+  //CB.SetOffloadArch("sm_75"); // needed?
+
+  std::unique_ptr<clang::CompilerInstance> CI;
+
+  auto compiler_or_error = CB.CreateCpp();
+  if (auto E = compiler_or_error.takeError())
+  {
+    PyErr_SetString(PyExc_RuntimeError, toString(std::move(E)).c_str());
+    return nullptr;
+  }
+
+  CI = std::move(*compiler_or_error);
+
+  std::unique_ptr<clang::Interpreter> Interp;
+  auto interp_or_error = clang::Interpreter::create(std::move(CI));
+
+  if (auto E = interp_or_error.takeError())
+  {
+    PyErr_SetString(PyExc_RuntimeError, toString(std::move(E)).c_str());
+    return nullptr;
+  }
+
+  Interp = std::move(*interp_or_error);
+
+  return PyLong_FromUnsignedLongLong((unsigned long long)Interp.get());
+}
+
+static PyObject *delete_interpreter(PyObject *self, PyObject *args)
+{
+  clang::Interpreter *interpreter = nullptr;
+  if (!PyArg_ParseTuple(args, "K", &interpreter))
+    return nullptr;
+
+  delete interpreter;
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *llvm_shutdown(PyObject *self, PyObject *args)
+{
+  llvm::llvm_shutdown();
+  Py_RETURN_NONE;
+}
 
 static PyMethodDef ext_methods[] = {
-    {"test_simple", (PyCFunction)test_simple, METH_VARARGS,
-      "Runs a simple test"},
-    {"create_jit_cache", (PyCFunction)create_jit_cache, METH_VARARGS,
-      "Create a jitify::JitCache instance"},
-    {"delete_jit_cache", (PyCFunction)delete_jit_cache, METH_VARARGS,
+    {"create_interpreter", (PyCFunction)create_interpreter, METH_VARARGS,
+      "Create a Clang interpreter"},
+    {"delete_interpreter", (PyCFunction)delete_interpreter, METH_VARARGS,
       "Delete a jitify::JitCache instance"},
-    {"jit_cache_program", (PyCFunction)jit_cache_program, METH_VARARGS,
-      "Create a cached jitify::Program instance"},
-    {"delete_program", (PyCFunction)delete_program, METH_VARARGS,
-      "Delete a jitify::Program instance"},
+    {"llvm_shutdown", (PyCFunction)llvm_shutdown, METH_VARARGS,
+      "Shut down LLVM"},
     {nullptr}
 };
 
 static struct PyModuleDef moduledef = {
   PyModuleDef_HEAD_INIT, "jitipy",
-  "Provides access to jitify", -1, ext_methods};
+  "Provides access to the Clang interpreter", -1, ext_methods};
 
 PyMODINIT_FUNC PyInit__lib(void) {
   PyObject *m = PyModule_Create(&moduledef);
+  /*
   jitify_error = PyErr_NewException("_lib.JitifyError", nullptr, nullptr);
   if (jitify_error == nullptr)
     return nullptr;
 
   if (PyModule_AddObjectRef(m, "JitifyError", jitify_error) < 0)
     return nullptr;
-
+  */
   return m;
 }
