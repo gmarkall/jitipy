@@ -1,5 +1,5 @@
 /*
- * Copytight (c) 2023, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
  */
 
 #define PY_SSIZE_T_CLEAN
