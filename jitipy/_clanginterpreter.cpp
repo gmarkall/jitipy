@@ -2,26 +2,55 @@
  * Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
  */
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include <iostream>
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Interpreter/Interpreter.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/ManagedStatic.h"
 
-static PyObject*
-create_interpreter(PyObject *self, PyObject *args)
+extern "C" void*
+create_interpreter()
 {
-  Py_RETURN_NONE;
+  llvm::InitializeAllTargetInfos();
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmPrinters();
+
+  clang::IncrementalCompilerBuilder CB;
+
+  std::unique_ptr<clang::CompilerInstance> CI;
+
+  auto compiler_or_error = CB.CreateCpp();
+  if (auto E = compiler_or_error.takeError())
+  {
+    std::cerr << toString(std::move(E)) << std::endl;
+    return nullptr;
+  }
+
+  CI = std::move(*compiler_or_error);
+
+  std::unique_ptr<clang::Interpreter> Interp;
+  auto interp_or_error = clang::Interpreter::create(std::move(CI));
+
+  if (auto E = interp_or_error.takeError())
+  {
+    std::cerr << toString(std::move(E)) << std::endl;
+    return nullptr;
+  }
+
+  Interp = std::move(*interp_or_error);
+
+  return Interp.release();
 }
 
-static PyMethodDef ext_methods[] = {
-    {"create_interpreter", (PyCFunction)create_interpreter, METH_VARARGS,
-      "Create a Clang interpreter"},
-    {nullptr}
-};
+extern "C" void
+delete_interpreter(void *interpreter)
+{
+  delete static_cast<clang::Interpreter*>(interpreter);
+}
 
-static struct PyModuleDef moduledef = {
-  PyModuleDef_HEAD_INIT, "jitipy",
-  "Provides access to the Clang interpreter", -1, ext_methods};
-
-PyMODINIT_FUNC PyInit__clanginterpreter(void) {
-  PyObject *m = PyModule_Create(&moduledef);
-  return m;
+extern "C" void
+llvm_shutdown()
+{
+  llvm::llvm_shutdown();
 }

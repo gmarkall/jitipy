@@ -5,3 +5,4 @@ _skbuild
 __pycache__
 **/*.cpython-*.so
 *.egg-info
+lib*.so*
