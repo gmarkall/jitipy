@@ -1,0 +1,6 @@
+.*.swp
+.*.swo
+build
+__pycache__
+**/*.cpython-*.so
+*.egg-info
