@@ -1,6 +1,7 @@
 .*.swp
 .*.swo
 build
+_skbuild
 __pycache__
 **/*.cpython-*.so
 *.egg-info
