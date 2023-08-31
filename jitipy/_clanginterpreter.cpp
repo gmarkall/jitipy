@@ -54,3 +54,16 @@ llvm_shutdown()
 {
   llvm::llvm_shutdown();
 }
+
+extern "C" bool
+parse_and_execute(void *interpreter, const char *line)
+{
+  auto ip = static_cast<clang::Interpreter*>(interpreter);
+  if (auto E = ip->ParseAndExecute(line))
+  {
+    std::cerr << toString(std::move(E)) << std::endl;
+    return true;
+  }
+
+  return false;
+}

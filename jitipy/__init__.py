@@ -15,6 +15,10 @@ def llvm_shutdown():
     clanginterpreter.llvm_shutdown()
 
 
+def parse_and_execute(interpreter, code):
+    clanginterpreter.parse_and_execute(interpreter, code)
+
+
 __all__ = (
     'create_interpreter',
     'delete_interpreter',
