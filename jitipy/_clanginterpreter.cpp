@@ -7,7 +7,7 @@
 #include "clang/Interpreter/Interpreter.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ManagedStatic.h"
-
+#include "llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderGDB.h"
 
 extern "C" void*
 create_interpreter()
@@ -69,4 +69,9 @@ parse_and_execute(void *interpreter, const char *line)
   }
 
   return false;
+}
+
+LLVM_ATTRIBUTE_USED void linkComponents() {
+  llvm::errs() << (void *)&llvm_orc_registerJITLoaderGDBWrapper
+               << (void *)&llvm_orc_registerJITLoaderGDBAllocAction;
 }
