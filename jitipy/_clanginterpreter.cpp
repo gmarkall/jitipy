@@ -8,6 +8,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ManagedStatic.h"
 
+
 extern "C" void*
 create_interpreter()
 {
@@ -20,7 +21,9 @@ create_interpreter()
 
   std::unique_ptr<clang::CompilerInstance> CI;
 
-  auto compiler_or_error = CB.CreateCpp();
+  // Pretend our executable is the clang-repl, since that seems to embody some
+  // behaviour (particularly around the resource and include dirs)
+  auto compiler_or_error = CB.CreateCpp("/data/gmarkall/opt/llvm/main-debug/bin/clang-repl");
   if (auto E = compiler_or_error.takeError())
   {
     std::cerr << toString(std::move(E)) << std::endl;
