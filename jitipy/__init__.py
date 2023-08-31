@@ -2,13 +2,24 @@
 
 from jitipy import clanginterpreter
 
-
-def create_interpreter():
-    return clanginterpreter.create_interpreter()
+clanginterpreter.initialize(['clang'])
 
 
-def delete_interpreter(interpreter):
-    clanginterpreter.delete_interpreter(interpreter)
+class Interpreter:
+    def __init__(self):
+        self.c_obj = clanginterpreter.create_interpreter()
+
+    def __del__(self):
+        clanginterpreter.delete_interpreter(self.c_obj)
+
+    def execute(self, code):
+        if isinstance(code, str):
+            code = (code,)
+
+        for line in code:
+            error = clanginterpreter.parse_and_execute(self.c_obj, line)
+            if error:
+                raise RuntimeError('Clang error')
 
 
 def llvm_shutdown():
@@ -16,7 +27,6 @@ def llvm_shutdown():
 
 
 __all__ = (
-    'create_interpreter',
-    'delete_interpreter',
+    'Interpreter',
     'llvm_shutdown',
 )

@@ -23,13 +23,14 @@ include_directories(SYSTEM "${LLVM_INCLUDE_DIRS};${CLANG_INCLUDE_DIRS}")
 set(LLVM_LINK_COMPONENTS
   ${LLVM_TARGETS_TO_BUILD}
   Core
+  Option
   OrcJIT
   Support
 )
 
 add_clang_library(_clanginterpreter jitipy/_clanginterpreter.cpp SHARED)
 
-clang_target_link_libraries(_clanginterpreter PRIVATE
+clang_target_link_libraries(_clanginterpreter PUBLIC
   clangAST
   clangBasic
   clangFrontend
