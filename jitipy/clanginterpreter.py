@@ -30,6 +30,18 @@ def parse_and_execute(interpreter, code):
     if isinstance(code, str):
         code = (code,)
 
+    continuation = ''
+
     for line in code:
+        if line.endswith('\\'):
+            continuation = line
+            continue
+
+        line = continuation + line
+        print(f"--- Executing: {line}")
+
         if lib.parse_and_execute(interpreter, line.encode()):
             print("Error returned")
+            return
+
+        continuation = ''
