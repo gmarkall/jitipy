@@ -19,11 +19,14 @@ create_interpreter()
 
   clang::IncrementalCompilerBuilder CB;
 
+  CB.SetCudaSDK("/usr/local/cuda");
+
   std::unique_ptr<clang::CompilerInstance> CI;
 
   // Pretend our executable is the clang-repl, since that seems to embody some
   // behaviour (particularly around the resource and include dirs)
-  auto compiler_or_error = CB.CreateCpp("/data/gmarkall/opt/llvm/main-debug/bin/clang-repl");
+  CB.SetMainExecutableName("/home/gmarkall/.local/opt/llvm/main-debug/bin/clang-repl");
+  auto compiler_or_error = CB.CreateCudaHost();
   if (auto E = compiler_or_error.takeError())
   {
     std::cerr << toString(std::move(E)) << std::endl;

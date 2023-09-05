@@ -10,6 +10,9 @@ print("Printing")
 jitipy.parse_and_execute(interpreter,
                          'std::cout << "Hello, world!" << std::endl;')
 
+print("Include jitify")
+jitipy.parse_and_execute(interpreter, '#include "jitipy/jitify2.hpp"')
+
 print("Delete interpreter")
 jitipy.delete_interpreter(interpreter)
 
