@@ -5,7 +5,7 @@ import pathlib
 
 sopath = pathlib.Path(__file__).absolute().parent / 'lib_clanginterpreter.so'
 
-lib = ctypes.CDLL(sopath)
+lib = ctypes.CDLL(sopath, mode=ctypes.RTLD_GLOBAL)
 lib.create_interpreter.restype = ctypes.c_void_p
 
 lib.delete_interpreter.argtypes = [ctypes.c_void_p]
