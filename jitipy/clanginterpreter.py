@@ -31,4 +31,5 @@ def parse_and_execute(interpreter, code):
         code = (code,)
 
     for line in code:
-        lib.parse_and_execute(interpreter, line.encode())
+        if lib.parse_and_execute(interpreter, line.encode()):
+            print("Error returned")
