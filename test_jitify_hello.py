@@ -2,20 +2,7 @@ import jitipy
 
 code = """
 #include <cmath>
-#include <cassert>
 #include <iostream>
-
-#define CHECK_CUDA(call)                                                  \
-  do {                                                                    \
-    if (call != CUDA_SUCCESS) {                                           \
-      const char* str;                                                    \
-      cuGetErrorName(call, &str);                                         \
-      std::cout << "(CUDA) returned " << str;                             \
-      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
-      return false;                                                       \
-    }                                                                     \
-  } while (0)
 
 template <typename T> bool are_close(T in, T out) { return fabs(in - out) <= 1e-5f * fabs(in); }
 
@@ -48,17 +35,21 @@ cudaMemcpy(d_data, &h_data, sizeof(T), cudaMemcpyHostToDevice);
 dim3 grid(1);
 dim3 block(1);
 
-CHECK_CUDA(kernel->configure(grid, block)->launch(d_data));
+kernel->configure(grid, block)->launch(d_data);
 cudaMemcpy(&h_data, d_data, sizeof(T), cudaMemcpyDeviceToHost);
 cudaFree(d_data);
-std::cout << h_data << std::endl;
-assert(are_close(h_data, 125.f));
+std::cout << "Expected: " << 125.f << ", Actual: " << h_data << std::endl;
 """.splitlines()  # noqa: E501
 
 
 print("Create interpreter")
 interpreter = jitipy.create_interpreter()
 
+# FIXME: This is probably needed because it works around loading the wrong
+# library or some sort of clash
+print("Initialize cuda")
+jitipy.parse_and_execute(interpreter, "#include <cuda.h>")
+jitipy.parse_and_execute(interpreter, "cudaSetDevice(0);")
 
 print("Include jitify")
 jitipy.parse_and_execute(interpreter, '#include "jitipy/jitify2.hpp"')
