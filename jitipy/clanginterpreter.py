@@ -15,7 +15,10 @@ lib.parse_and_execute.restype = ctypes.c_bool
 
 
 def create_interpreter():
-    return lib.create_interpreter()
+    interp = lib.create_interpreter()
+    if not interp:
+        raise RuntimeError("Error creating interpreter")
+    return interp
 
 
 def delete_interpreter(interpreter):
