@@ -37,7 +37,7 @@ def get_interpreter():
 
 class Interpreter:
     def __init__(self):
-        self._interpreter = get_interpreter()
+        self._interpreter = clanginterpreter.create_interpreter()
 
         # FIXME: This is probably needed because it works around loading the
         # wrong library or some sort of clash. Without it, jitify encounters a
@@ -45,7 +45,7 @@ class Interpreter:
         self.parse_and_execute(["#include <cuda.h>", "cudaSetDevice(0);"])
 
         # Load jitify2
-        self.parse_and_execute('#include jitipy/jitify2.hpp')
+        self.parse_and_execute('#include "jitipy/jitify2.hpp"')
 
     def __del__(self):
         delete_interpreter(self._interpreter)
@@ -54,11 +54,14 @@ class Interpreter:
         return parse_and_execute(self._interpreter, code)
 
 
+program_code = """jitify2::Program("{name}", R"({source})")"""
+
+
 class Program:
     def __init__(self, name, source):
-        self.name = name
-        self.source = source
-        
+        code = program_code.format(name=name, source=source)
+        print(f"Program code:\n\n{code}")
+        self._program = get_interpreter().parse_and_execute(code)
 
 
 __all__ = (
