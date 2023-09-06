@@ -46,6 +46,12 @@ create_interpreter()
 
   Interp = std::move(*interp_or_error);
 
+  if (auto E = Interp->LoadDynamicLibrary("libcudart.so"))
+  {
+    std::cerr << toString(std::move(E)) << std::endl;
+    return nullptr;
+  }
+
   return Interp.release();
 }
 
