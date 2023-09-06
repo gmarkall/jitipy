@@ -1,7 +1,4 @@
 import jitipy
-# Load libs
-# %lib libcuda.so
-# %lib libnvrtc.so
 
 code = """
 #include <cmath>
@@ -23,7 +20,6 @@ code = """
 template <typename T> bool are_close(T in, T out) { return fabs(in - out) <= 1e-5f * fabs(in); }
 
 const char* program_source =               \
-    "my_program\\n"                        \
     "template<int N, typename T>\\n"       \
     "__global__\\n"                        \
     "void my_kernel(T* data) {\\n"         \
@@ -33,20 +29,26 @@ const char* program_source =               \
     "    }\\n"                             \
     "}\\n";
 
-jitify::JitCache kernel_cache;
-
-jitify::Program program = kernel_cache.program(program_source, 0);
 
 using T = float;
-
 T h_data = 5;
 T* d_data;
+
+using jitify2::reflection::type_of;
+
+auto program = jitify2::Program("my_program", program_source);
+auto preprocessed_program = program->preprocess();
+auto kernel_inst = jitify2::reflection::Template("my_kernel").instantiate(3, type_of(*d_data));
+auto compiled = preprocessed_program->compile(kernel_inst);
+auto linked = compiled->link();
+auto kernel = linked->load()->get_kernel(kernel_inst);
 cudaMalloc((void**)&d_data, sizeof(T));
 cudaMemcpy(d_data, &h_data, sizeof(T), cudaMemcpyHostToDevice);
+
 dim3 grid(1);
 dim3 block(1);
-using jitify::reflection::type_of;
-CHECK_CUDA(program.kernel("my_kernel").instantiate(3, type_of(*d_data)).configure(grid, block).launch(d_data));
+
+CHECK_CUDA(kernel->configure(grid, block)->launch(d_data));
 cudaMemcpy(&h_data, d_data, sizeof(T), cudaMemcpyDeviceToHost);
 cudaFree(d_data);
 std::cout << h_data << std::endl;
