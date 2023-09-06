@@ -45,3 +45,8 @@ def parse_and_execute(interpreter, code):
             return
 
         continuation = ''
+
+
+def load_dynamic_library(interpreter, name):
+    if lib.load_dynamic_library(name):
+        print("Error returned")

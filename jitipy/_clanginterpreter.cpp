@@ -74,6 +74,20 @@ parse_and_execute(void *interpreter, const char *line)
   return false;
 }
 
+extern "C" bool
+load_dynamic_library(void *interpreter, const char *name)
+{
+  auto ip = static_cast<clang::Interpreter*>(interpreter);
+  if (auto E = ip->LoadDynamicLibrary(name))
+  {
+
+    std::cerr << toString(std::move(E)) << std::endl;
+    return true;
+  }
+
+  return false;
+}
+
 LLVM_ATTRIBUTE_USED void linkComponents() {
   llvm::errs() << (void *)&llvm_orc_registerJITLoaderGDBWrapper
                << (void *)&llvm_orc_registerJITLoaderGDBAllocAction;

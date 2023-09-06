@@ -19,8 +19,14 @@ def parse_and_execute(interpreter, code):
     clanginterpreter.parse_and_execute(interpreter, code)
 
 
+def load_dynamic_library(interpreter, name):
+    clanginterpreter.load_dynamic_library(interpreter, name)
+
+
 __all__ = (
     'create_interpreter',
     'delete_interpreter',
     'llvm_shutdown',
+    'load_dynamic_library'
+    'parse_and_execute',
 )
