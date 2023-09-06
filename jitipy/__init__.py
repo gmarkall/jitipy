@@ -1,6 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 
 from jitipy import clanginterpreter
+import functools
 
 
 def create_interpreter():
@@ -16,11 +17,48 @@ def llvm_shutdown():
 
 
 def parse_and_execute(interpreter, code):
-    clanginterpreter.parse_and_execute(interpreter, code)
+    return clanginterpreter.parse_and_execute(interpreter, code)
 
 
 def load_dynamic_library(interpreter, name):
     clanginterpreter.load_dynamic_library(interpreter, name)
+
+
+@functools.cache
+def get_interpreter():
+    """
+    Call this to create the interpreter eagerly if desired. Creating
+    the interpreter carries a small startup cost and also initializes CUDA.
+
+    :return: The interpreter singleton object.
+    """
+    return Interpreter()
+
+
+class Interpreter:
+    def __init__(self):
+        self._interpreter = get_interpreter()
+
+        # FIXME: This is probably needed because it works around loading the
+        # wrong library or some sort of clash. Without it, jitify encounters a
+        # CUDA initialization error.
+        self.parse_and_execute(["#include <cuda.h>", "cudaSetDevice(0);"])
+
+        # Load jitify2
+        self.parse_and_execute('#include jitipy/jitify2.hpp')
+
+    def __del__(self):
+        delete_interpreter(self._interpreter)
+
+    def parse_and_execute(self, code):
+        return parse_and_execute(self._interpreter, code)
+
+
+class Program:
+    def __init__(self, name, source):
+        self.name = name
+        self.source = source
+        
 
 
 __all__ = (

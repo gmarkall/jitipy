@@ -5,6 +5,7 @@
 #include <iostream>
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Interpreter/Interpreter.h"
+#include "clang/Interpreter/Value.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderGDB.h"
@@ -68,16 +69,25 @@ llvm_shutdown()
 }
 
 extern "C" bool
-parse_and_execute(void *interpreter, const char *line)
+parse_and_execute(void *interpreter, const char *line, void **result_ptr)
 {
   auto ip = static_cast<clang::Interpreter*>(interpreter);
-  if (auto E = ip->ParseAndExecute(line))
+  clang::Value *V = new clang::Value;
+  if (auto E = ip->ParseAndExecute(line, V))
   {
     std::cerr << toString(std::move(E)) << std::endl;
     return true;
   }
 
+  *result_ptr = static_cast<void*>(V);
   return false;
+}
+
+extern "C" void
+delete_value(void *value)
+{
+  auto vp = static_cast<clang::Value*>(value);
+  delete vp;
 }
 
 extern "C" bool

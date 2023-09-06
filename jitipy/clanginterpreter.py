@@ -3,6 +3,8 @@
 import ctypes
 import pathlib
 
+DEBUG_EXECUTION = False
+
 sopath = pathlib.Path(__file__).absolute().parent / 'lib_clanginterpreter.so'
 
 lib = ctypes.CDLL(sopath, mode=ctypes.RTLD_GLOBAL)
@@ -10,7 +12,8 @@ lib.create_interpreter.restype = ctypes.c_void_p
 
 lib.delete_interpreter.argtypes = [ctypes.c_void_p]
 
-lib.parse_and_execute.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+lib.parse_and_execute.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
+                                  ctypes.c_void_p]
 lib.parse_and_execute.restype = ctypes.c_bool
 
 
@@ -30,6 +33,8 @@ def llvm_shutdown():
 
 
 def parse_and_execute(interpreter, code):
+    result = ctypes.c_int(0)
+
     if isinstance(code, str):
         code = (code,)
 
@@ -41,13 +46,17 @@ def parse_and_execute(interpreter, code):
             continue
 
         line = continuation + line
-        print(f"--- Executing: {line}")
+        if DEBUG_EXECUTION:
+            print(f"--- Executing: {line}")
 
-        if lib.parse_and_execute(interpreter, line.encode()):
+        if lib.parse_and_execute(interpreter, line.encode(),
+                                 ctypes.byref(result)):
             print("Error returned")
             return
 
         continuation = ''
+
+    return result.value
 
 
 def load_dynamic_library(interpreter, name):
