@@ -48,11 +48,11 @@ lib.parse_and_execute.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
                                   ctypes.c_void_p]
 lib.parse_and_execute.restype = ctypes.c_bool
 
-main_executable_name = "/data/gmarkall/opt/llvm/main/bin/clang-repl"
+resource_path = "/data/gmarkall/opt/llvm/main"
 
 
 def create_interpreter():
-    interp = lib.create_interpreter(main_executable_name.encode())
+    interp = lib.create_interpreter(resource_path.encode())
     if not interp:
         raise RuntimeError("Error creating interpreter")
     return interp

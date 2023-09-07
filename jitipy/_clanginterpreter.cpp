@@ -11,7 +11,7 @@
 #include "llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderGDB.h"
 
 extern "C" void*
-create_interpreter(const char* main_executable_name)
+create_interpreter(const char* resource_path)
 {
   llvm::InitializeAllTargetInfos();
   llvm::InitializeAllTargets();
@@ -24,9 +24,17 @@ create_interpreter(const char* main_executable_name)
 
   std::unique_ptr<clang::CompilerInstance> CI;
 
-  // Pretend our executable is the clang-repl, since that seems to embody some
-  // behaviour (particularly around the resource and include dirs)
-  CB.SetMainExecutableName(main_executable_name);
+  // If the clang installation path does not coincide with the Python
+  // installation path, the interpreter won't be able to locate the clang
+  // resources because it will be searching in the Python installation path
+  // (determined based on the main executable path). We can add the correct
+  // path to the resources to the LLVM path so that it can locate the
+  // resources.
+  if (resource_path)
+  {
+    CB.SetCompilerArgs({"-resource-dir", resource_path});
+  }
+
   auto compiler_or_error = CB.CreateCudaHost();
   if (auto E = compiler_or_error.takeError())
   {
