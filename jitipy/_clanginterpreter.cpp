@@ -11,7 +11,7 @@
 #include "llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderGDB.h"
 
 extern "C" void*
-create_interpreter()
+create_interpreter(const char* main_executable_name)
 {
   llvm::InitializeAllTargetInfos();
   llvm::InitializeAllTargets();
@@ -26,7 +26,7 @@ create_interpreter()
 
   // Pretend our executable is the clang-repl, since that seems to embody some
   // behaviour (particularly around the resource and include dirs)
-  CB.SetMainExecutableName("/home/gmarkall/.local/opt/llvm/main-debug/bin/clang-repl");
+  CB.SetMainExecutableName(main_executable_name);
   auto compiler_or_error = CB.CreateCudaHost();
   if (auto E = compiler_or_error.takeError())
   {

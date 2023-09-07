@@ -36,8 +36,10 @@ ValuePointer = ctypes.POINTER(Value)
 DEBUG_EXECUTION = False
 
 sopath = pathlib.Path(__file__).absolute().parent / 'lib_clanginterpreter.so'
-
 lib = ctypes.CDLL(sopath, mode=ctypes.RTLD_GLOBAL)
+
+
+lib.create_interpreter.argtypes = [ctypes.c_char_p]
 lib.create_interpreter.restype = ctypes.c_void_p
 
 lib.delete_interpreter.argtypes = [ctypes.c_void_p]
@@ -46,9 +48,11 @@ lib.parse_and_execute.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
                                   ctypes.c_void_p]
 lib.parse_and_execute.restype = ctypes.c_bool
 
+main_executable_name = "/data/gmarkall/opt/llvm/main/bin/clang-repl"
+
 
 def create_interpreter():
-    interp = lib.create_interpreter()
+    interp = lib.create_interpreter(main_executable_name.encode())
     if not interp:
         raise RuntimeError("Error creating interpreter")
     return interp
