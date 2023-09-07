@@ -57,7 +57,7 @@ class Interpreter:
 program_code = """jitify2::Program("{name}", R"({source})")"""
 
 preprocess_program_code = """\
-(reinterpret_cast<jitify2::Program*>(0x{value:x}ull))->preprocess()"""
+(*(reinterpret_cast<jitify2::Program*>(0x{value:x}ull)))->preprocess()"""
 
 
 class Program:
