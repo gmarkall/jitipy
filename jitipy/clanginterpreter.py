@@ -48,7 +48,7 @@ lib.parse_and_execute.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
                                   ctypes.c_void_p]
 lib.parse_and_execute.restype = ctypes.c_bool
 
-resource_path = "/data/gmarkall/opt/llvm/main"
+resource_path = "/data/gmarkall/opt/llvm/main/lib/clang/18"
 
 
 def create_interpreter():
