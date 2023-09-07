@@ -56,12 +56,34 @@ class Interpreter:
 
 program_code = """jitify2::Program("{name}", R"({source})")"""
 
+preprocess_program_code = """\
+(reinterpret_cast<jitify2::Program*>(0x{value:x}ull))->preprocess()"""
+
 
 class Program:
     def __init__(self, name, source):
         code = program_code.format(name=name, source=source)
         print(f"Program code:\n\n{code}")
-        self._program = get_interpreter().parse_and_execute(code)
+        self._value = get_interpreter().parse_and_execute(code)
+
+    @property
+    def ptr(self):
+        return self._value[0].Data.m_ULongLong
+
+    def preprocess(self):
+        code = preprocess_program_code.format(value=self.ptr)
+        print(f"Preprocess program code:\n\n{code}")
+        value = get_interpreter().parse_and_execute(code)
+        return PreprocessedProgram(value)
+
+
+class PreprocessedProgram:
+    def __init__(self, value):
+        self._value = value
+
+    @property
+    def ptr(self):
+        return self._value[0].Data.m_ULongLong
 
 
 __all__ = (

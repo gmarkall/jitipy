@@ -13,4 +13,7 @@ void my_kernel(T* data) {
 
 
 program = jitipy.Program("my_program", source)
-print(f'0x{program._program[0].Data.m_ULongLong:x}')
+print(f'0x{program.ptr:x}')
+
+preprocessed_program = program.preprocess()
+print(f'0x{preprocessed_program.ptr:x}')
