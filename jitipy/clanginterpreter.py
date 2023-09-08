@@ -1,7 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
 
 import ctypes
+import functools
 import pathlib
+import subprocess
 
 
 class Storage(ctypes.Union):
@@ -48,11 +50,16 @@ lib.parse_and_execute.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
                                   ctypes.c_void_p]
 lib.parse_and_execute.restype = ctypes.c_bool
 
-resource_path = "/data/gmarkall/opt/llvm/main/lib/clang/18"
+
+@functools.cache
+def get_resource_dir():
+    cp = subprocess.run(['clang', '--print-resource-dir'], capture_output=True)
+    return cp.stdout.decode().strip()
 
 
 def create_interpreter():
-    interp = lib.create_interpreter(resource_path.encode())
+    resource_dir = get_resource_dir()
+    interp = lib.create_interpreter(resource_dir.encode())
     if not interp:
         raise RuntimeError("Error creating interpreter")
     return interp
