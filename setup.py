@@ -1,3 +1,5 @@
+# Copyright (c) 2023, NVIDIA Corporation
+
 from skbuild import setup
 
 setup(
