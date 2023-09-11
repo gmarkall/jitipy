@@ -1,3 +1,5 @@
+# Copyrihgt (c) 2023, NVIDIA Corporation
+
 [build-system]
 
 requires = [
@@ -8,3 +10,21 @@ requires = [
 ]
 
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "jitipy"
+version = "0.0.1"
+description = "Jitify, but for Python"
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [
+    { name = "NVIDIA Corporation" },
+]
+license = { text = "BSD 3-Clause" }
+
+[project.optional-dependencies]
+test = [
+    "pytest"
+]
+
+[project.urls]
+Homepage = "https://github.com/gmarkall/jitipy"
