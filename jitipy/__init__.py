@@ -2,6 +2,13 @@
 
 from jitipy import clanginterpreter
 import functools
+import itertools
+
+_variable_indices = itertools.count()
+
+
+def _new_variable():
+    return f'__jitipy_var_{next(_variable_indices)}'
 
 
 def create_interpreter():
@@ -63,13 +70,13 @@ def construct_cpp_variable(ty, ptr):
 program_code = """jitify2::Program("{name}", R"({source})")"""
 
 preprocess_program_code = """\
-auto x = {jitify_object}->preprocess(); x"""
+auto {var} = {jitify_object}->preprocess(); {var}"""
 
 get_kernel_code = """\
-auto y = {jitify_object}->get_kernel("{name}"); y"""
+auto {var} = {jitify_object}->get_kernel("{name}"); {var}"""
 
 configure_code = """\
-auto z = {jitify_object}->configure({grid_dim}, {block_dim}); z"""
+auto {var} = {jitify_object}->configure({grid_dim}, {block_dim}); {var}"""
 
 launch_code = """\
 {jitify_object}->launch({args});"""
@@ -101,7 +108,8 @@ class Program(JitifyObject):
         self._ty = "jitify2::Program"
 
     def preprocess(self):
-        code = preprocess_program_code.format(jitify_object=self.variable)
+        code = preprocess_program_code.format(jitify_object=self.variable,
+                                              var=_new_variable())
         print(f"Preprocess program code:\n\n{code}")
         value = get_interpreter().parse_and_execute(code)
         return PreprocessedProgram(value)
@@ -118,7 +126,8 @@ class PreprocessedProgram(JitifyObject):
         self._ty = "jitify2::PreprocessedProgram"
 
     def get_kernel(self, name):
-        code = get_kernel_code.format(jitify_object=self.variable, name=name)
+        code = get_kernel_code.format(jitify_object=self.variable, name=name,
+                                      var=_new_variable())
         print(f"Get kernel code:\n\n{code}")
         value = get_interpreter().parse_and_execute(code)
         return Kernel(value)
@@ -132,7 +141,8 @@ class Kernel(JitifyObject):
     def configure(self, grid_dim, block_dim):
         code = configure_code.format(jitify_object=self.variable,
                                      grid_dim=grid_dim,
-                                     block_dim=block_dim)
+                                     block_dim=block_dim,
+                                     var=_new_variable())
         print(f"Configure code:\n\n{code}")
         value = get_interpreter().parse_and_execute(code)
         return ConfiguredKernel(value)
