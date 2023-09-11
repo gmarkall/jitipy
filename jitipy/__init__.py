@@ -70,19 +70,26 @@ float *data = reinterpret_cast<float*>(0x{data:x}ull);
 {program}->preprocess()->get_kernel("my_kernel")->configure(1, 1)->launch(data);"""
 
 
-class Program:
-    def __init__(self, name, source):
-        code = program_code.format(name=name, source=source)
-        print(f"Program code:\n\n{code}")
-        self._value = get_interpreter().parse_and_execute(code)
-
+class JitifyObject:
     @property
     def ptr(self):
         return self._value[0].Data.m_ULongLong
 
+    @property
+    def ty(self):
+        return self._ty
+
     @functools.cached_property
     def variable(self):
-        return construct_cpp_variable("jitify2::Program", self.ptr)
+        return construct_cpp_variable(self.ty, self.ptr)
+
+
+class Program(JitifyObject):
+    def __init__(self, name, source):
+        code = program_code.format(name=name, source=source)
+        print(f"Program code:\n\n{code}")
+        self._value = get_interpreter().parse_and_execute(code)
+        self._ty = "jitify2::Program"
 
     def preprocess(self):
         code = preprocess_program_code.format(program=self.variable)
@@ -96,13 +103,10 @@ class Program:
         get_interpreter().parse_and_execute(code)
 
 
-class PreprocessedProgram:
+class PreprocessedProgram(JitifyObject):
     def __init__(self, value):
         self._value = value
-
-    @property
-    def ptr(self):
-        return self._value[0].Data.m_ULongLong
+        self._ty = "jitify2::PreprocessedProgram"
 
 
 __all__ = (
