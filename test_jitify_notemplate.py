@@ -1,11 +1,13 @@
 import jitipy
-import sys
+import numpy as np
+from numba import cuda
+
 
 source = """
-template<int N, typename T>
 __global__
-void my_kernel(T* data) {
-    T data0 = data[0];
+void my_kernel(float* data) {
+    float data0 = data[0];
+    int N = 3;
     for( int i=0; i<N-1; ++i ) {
         data[0] *= data0;
     }
@@ -19,5 +21,10 @@ print(f'0x{program.ptr:x}')
 
 #sys.exit(0)
 
-preprocessed_program = program.preprocess()
-print(f'0x{preprocessed_program.ptr:x}')
+data = cuda.device_array(1, dtype=np.float32)
+data[0] = 5
+data_ptr = data.__cuda_array_interface__['data'][0]
+print(f"Data: 0x{data_ptr:x}")
+program.test_kernel(data_ptr)
+
+print(data[0])

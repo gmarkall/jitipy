@@ -57,7 +57,11 @@ class Interpreter:
 program_code = """jitify2::Program("{name}", R"({source})")"""
 
 preprocess_program_code = """\
-(*(reinterpret_cast<jitify2::Program*>(0x{value:x}ull)))->preprocess()"""
+auto x = (*(reinterpret_cast<jitify2::Program*>(0x{value:x}ull)))->preprocess(); x"""
+
+test_kernel_code = """\
+float *data = reinterpret_cast<float*>(0x{data:x}ull);
+(*(reinterpret_cast<jitify2::Program*>(0x{value:x}ull)))->preprocess()->get_kernel("my_kernel")->configure(1, 1)->launch(data);"""
 
 
 class Program:
@@ -75,6 +79,11 @@ class Program:
         print(f"Preprocess program code:\n\n{code}")
         value = get_interpreter().parse_and_execute(code)
         return PreprocessedProgram(value)
+
+    def test_kernel(self, data):
+        code = test_kernel_code.format(value=self.ptr, data=data)
+        print(f"Preprocess program code:\n\n{code}")
+        get_interpreter().parse_and_execute(code)
 
 
 class PreprocessedProgram:
