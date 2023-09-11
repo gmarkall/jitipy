@@ -28,3 +28,9 @@ test = [
 
 [project.urls]
 Homepage = "https://github.com/gmarkall/jitipy"
+
+[tool.setuptools]
+packages = [
+    "jitipy",
+    "jitipy.tests",
+]
