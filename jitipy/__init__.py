@@ -54,14 +54,20 @@ class Interpreter:
         return parse_and_execute(self._interpreter, code)
 
 
+def construct_cpp_variable(ty, ptr):
+    variable = f"(*(reinterpret_cast<{ty}*>(0x{ptr:x}ull)))"
+    print(f"Variable: {variable}")
+    return variable
+
+
 program_code = """jitify2::Program("{name}", R"({source})")"""
 
 preprocess_program_code = """\
-auto x = (*(reinterpret_cast<jitify2::Program*>(0x{value:x}ull)))->preprocess(); x"""
+auto x = {program}->preprocess(); x"""
 
 test_kernel_code = """\
 float *data = reinterpret_cast<float*>(0x{data:x}ull);
-(*(reinterpret_cast<jitify2::Program*>(0x{value:x}ull)))->preprocess()->get_kernel("my_kernel")->configure(1, 1)->launch(data);"""
+{program}->preprocess()->get_kernel("my_kernel")->configure(1, 1)->launch(data);"""
 
 
 class Program:
@@ -74,14 +80,18 @@ class Program:
     def ptr(self):
         return self._value[0].Data.m_ULongLong
 
+    @functools.cached_property
+    def variable(self):
+        return construct_cpp_variable("jitify2::Program", self.ptr)
+
     def preprocess(self):
-        code = preprocess_program_code.format(value=self.ptr)
+        code = preprocess_program_code.format(program=self.variable)
         print(f"Preprocess program code:\n\n{code}")
         value = get_interpreter().parse_and_execute(code)
         return PreprocessedProgram(value)
 
     def test_kernel(self, data):
-        code = test_kernel_code.format(value=self.ptr, data=data)
+        code = test_kernel_code.format(program=self.variable, data=data)
         print(f"Preprocess program code:\n\n{code}")
         get_interpreter().parse_and_execute(code)
 
