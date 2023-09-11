@@ -63,7 +63,16 @@ def construct_cpp_variable(ty, ptr):
 program_code = """jitify2::Program("{name}", R"({source})")"""
 
 preprocess_program_code = """\
-auto x = {program}->preprocess(); x"""
+auto x = {jitify_object}->preprocess(); x"""
+
+get_kernel_code = """\
+auto y = {jitify_object}->get_kernel("{name}"); y"""
+
+configure_code = """\
+auto z = {jitify_object}->configure({grid_dim}, {block_dim}); z"""
+
+launch_code = """\
+{jitify_object}->launch({args});"""
 
 test_kernel_code = """\
 float *data = reinterpret_cast<float*>(0x{data:x}ull);
@@ -92,7 +101,7 @@ class Program(JitifyObject):
         self._ty = "jitify2::Program"
 
     def preprocess(self):
-        code = preprocess_program_code.format(program=self.variable)
+        code = preprocess_program_code.format(jitify_object=self.variable)
         print(f"Preprocess program code:\n\n{code}")
         value = get_interpreter().parse_and_execute(code)
         return PreprocessedProgram(value)
@@ -107,6 +116,40 @@ class PreprocessedProgram(JitifyObject):
     def __init__(self, value):
         self._value = value
         self._ty = "jitify2::PreprocessedProgram"
+
+    def get_kernel(self, name):
+        code = get_kernel_code.format(jitify_object=self.variable, name=name)
+        print(f"Get kernel code:\n\n{code}")
+        value = get_interpreter().parse_and_execute(code)
+        return Kernel(value)
+
+
+class Kernel(JitifyObject):
+    def __init__(self, value):
+        self._value = value
+        self._ty = "jitify2::Kernel"
+
+    def configure(self, grid_dim, block_dim):
+        code = configure_code.format(jitify_object=self.variable,
+                                     grid_dim=grid_dim,
+                                     block_dim=block_dim)
+        print(f"Configure code:\n\n{code}")
+        value = get_interpreter().parse_and_execute(code)
+        return ConfiguredKernel(value)
+
+
+class ConfiguredKernel(JitifyObject):
+
+    def __init__(self, value):
+        self._value = value
+        self._ty = "jitify2::ConfiguredKernel"
+
+    def launch(self, *args):
+        args = ", ".join(str(arg) for arg in args)
+        code = launch_code.format(jitify_object=self.variable,
+                                  args=args)
+        print(f"Launch code:\n\n{code}")
+        get_interpreter().parse_and_execute(code)
 
 
 __all__ = (
