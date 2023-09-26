@@ -80,6 +80,20 @@ auto {var} = {jitify_object}->configure({grid_dim}, {block_dim}); {var}"""
 launch_code = """\
 {jitify_object}->launch({args});"""
 
+jitipy_method_code = """\
+auto {var} = {jitify_object}->{method}({args}); {var}"""
+
+
+def stringify_args(args):
+    new_args = []
+
+    for arg in args:
+        if isinstance(arg, str):
+            arg = f'"{arg}"'
+        new_args.append(arg)
+
+    return new_args
+
 
 class JitifyObject:
     @property
@@ -93,6 +107,27 @@ class JitifyObject:
     @functools.cached_property
     def variable(self):
         return construct_cpp_variable(self.ty, self.ptr)
+
+    def __getattr__(self, fname):
+        if fname == "_functions":
+            return {}
+
+        if fname not in self._functions:
+            raise AttributeError
+
+        jitify_object = self.variable
+        return_type = self._functions[fname]
+
+        def method(*args):
+            args = ", ".join(stringi::fy_args(args))
+            code = jitipy_method_code.format(jitify_object=jitify_object,
+                                             var=_new_variable(),
+                                             args=args,
+                                             method=fname)
+            value = get_interpreter().parse_and_execute(code)
+            return return_type(value)
+
+        return method
 
 
 class Program(JitifyObject):
@@ -112,12 +147,13 @@ class PreprocessedProgram(JitifyObject):
     def __init__(self, value):
         self._value = value
         self._ty = "jitify2::PreprocessedProgram"
+        self._functions = {'get_kernel': Kernel}
 
-    def get_kernel(self, name):
-        code = get_kernel_code.format(jitify_object=self.variable, name=name,
-                                      var=_new_variable())
-        value = get_interpreter().parse_and_execute(code)
-        return Kernel(value)
+#    def get_kernel(self, name):
+#        code = get_kernel_code.format(jitify_object=self.variable, name=name,
+#                                      var=_new_variable())
+#        value = get_interpreter().parse_and_execute(code)
+#        return Kernel(value)
 
 
 class Kernel(JitifyObject):
